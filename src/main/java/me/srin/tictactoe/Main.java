@@ -9,10 +9,7 @@ import imgui.flag.ImGuiWindowFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import me.srin.tictactoe.engine.TicTacToeEngine;
-import org.lwjgl.glfw.Callbacks;
-import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWKeyCallback;
-import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryUtil;
 
@@ -29,8 +26,7 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL30.glGenerateMipmap;
-import static org.lwjgl.stb.STBImage.stbi_image_free;
-import static org.lwjgl.stb.STBImage.stbi_load_from_memory;
+import static org.lwjgl.stb.STBImage.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public final class Main {
@@ -91,6 +87,45 @@ public final class Main {
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
+
+        try (GLFWImage.Buffer image = GLFWImage.malloc(3)) {
+            ByteBuffer appIcon256x256 = loadResourcesAsBuffer("textures/tictactoe.png");
+            ByteBuffer appIcon32x32 = loadResourcesAsBuffer("textures/tictactoe32x32.png");
+            ByteBuffer appIcon16x16 = loadResourcesAsBuffer("textures/tictactoe16x16.png");
+
+            int[] width = { 0 };
+            int[] height = { 0 };
+            int[] channels = { 0 };
+            stbi_set_flip_vertically_on_load(true);
+
+            ByteBuffer pixels16 = stbi_load_from_memory(appIcon16x16, width, height, channels, 4);
+            if (pixels16 == null) {
+                throw new RuntimeException("Failed to load icon");
+            }
+            image.position(0).width(width[0]).height(height[0]).pixels(pixels16);
+
+            ByteBuffer pixels32 = stbi_load_from_memory(appIcon32x32, width, height, channels, 4);
+            if (pixels32 == null) {
+                throw new RuntimeException("Failed to load icon");
+            }
+            image.position(1).width(width[0]).height(height[0]).pixels(pixels32);
+
+            ByteBuffer pixels256 = stbi_load_from_memory(appIcon256x256, width, height, channels, 4);
+            if (pixels256 == null) {
+                throw new RuntimeException("Failed to load icon");
+            }
+            image.position(2).width(width[0]).height(height[0]).pixels(pixels256);
+
+            glfwSetWindowIcon(WINDOW, image.position(0));
+            stbi_image_free(pixels16);
+            stbi_image_free(pixels32);
+            stbi_image_free(pixels256);
+            MemoryUtil.memFree(appIcon256x256);
+            MemoryUtil.memFree(appIcon32x32);
+            MemoryUtil.memFree(appIcon16x16);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
     private static int loadTexture(String name) throws URISyntaxException, IOException {
         int texture = glGenTextures();
@@ -128,6 +163,15 @@ public final class Main {
         try (InputStream in = Main.class.getResourceAsStream(filename)) {
             if (in == null) throw new FileNotFoundException(filename);
             return readNBytes(in, Integer.MAX_VALUE);
+        }
+    }
+    public static ByteBuffer loadResourcesAsBuffer(String filename) throws IOException {
+        try (InputStream in = Main.class.getResourceAsStream(filename)) {
+            if (in == null) throw new FileNotFoundException(filename);
+            byte[] bytes = readNBytes(in, Integer.MAX_VALUE);
+            ByteBuffer buffer = MemoryUtil.memCalloc(bytes.length);
+            buffer.put(bytes).flip();
+            return buffer;
         }
     }
     private static void imGuiStartFrame() {
