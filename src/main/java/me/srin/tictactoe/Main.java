@@ -40,7 +40,7 @@ public final class Main {
     private static final ImGuiImplGl3 IM_GUI_GL3 = new ImGuiImplGl3();
     private static final int BOARD_TEXTURE;
     private static final int CROSS_TEXTURE;
-    private static final int NAUGHT_TEXTURE;
+    private static final int NOUGHT_TEXTURE;
     private static final int BLANK_TEXTURE;
     public static final int BOARD_WIDTH = 200;
     public static final int BOARD_HEIGHT = 200;
@@ -81,15 +81,14 @@ public final class Main {
         try {
             BOARD_TEXTURE = loadTexture("textures/board.png");
             CROSS_TEXTURE = loadTexture("textures/cross.png");
-            NAUGHT_TEXTURE = loadTexture("textures/circle.png");
+            NOUGHT_TEXTURE = loadTexture("textures/circle.png");
             BLANK_TEXTURE = loadTexture("textures/blank.png");
             HOVER_TEXTURE = loadTexture("textures/hover.png");
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
 
-        try (GLFWImage.Buffer image = GLFWImage.malloc(3)) {
-            ByteBuffer appIcon256x256 = loadResourcesAsBuffer("textures/tictactoe.png");
+        try (GLFWImage.Buffer image = GLFWImage.malloc(2)) {
             ByteBuffer appIcon32x32 = loadResourcesAsBuffer("textures/tictactoe32x32.png");
             ByteBuffer appIcon16x16 = loadResourcesAsBuffer("textures/tictactoe16x16.png");
 
@@ -110,17 +109,9 @@ public final class Main {
             }
             image.position(1).width(width[0]).height(height[0]).pixels(pixels32);
 
-            ByteBuffer pixels256 = stbi_load_from_memory(appIcon256x256, width, height, channels, 4);
-            if (pixels256 == null) {
-                throw new RuntimeException("Failed to load icon");
-            }
-            image.position(2).width(width[0]).height(height[0]).pixels(pixels256);
-
             glfwSetWindowIcon(WINDOW, image.position(0));
             stbi_image_free(pixels16);
             stbi_image_free(pixels32);
-            stbi_image_free(pixels256);
-            MemoryUtil.memFree(appIcon256x256);
             MemoryUtil.memFree(appIcon32x32);
             MemoryUtil.memFree(appIcon16x16);
         } catch (IOException e) {
@@ -204,6 +195,7 @@ public final class Main {
         );
         boolean win = false, draw = false;
         char winner = 0;
+        int noughtPoints = 0, crossPoints = 0;
         while (!glfwWindowShouldClose(WINDOW)) {
             glClear(GL_COLOR_BUFFER_BIT);
             imGuiStartFrame(); {
@@ -211,12 +203,12 @@ public final class Main {
                     ImGui.setWindowSize(WIDTH, HEIGHT);
                     ImGui.setWindowPos(0, 0);
                     if (win) {
-                        ImGui.setCursorPos(BOARD_X + 50, BOARD_Y - 50);
+                        ImGui.setCursorPos(BOARD_X + 50, BOARD_Y - 70);
                         ImGui.text("winner is   !!");
-                        ImGui.setCursorPos(BOARD_X + 120, BOARD_Y - 47);
-                        ImGui.image(winner == 'x'? CROSS_TEXTURE: NAUGHT_TEXTURE, 10, 10);
+                        ImGui.setCursorPos(BOARD_X + 120, BOARD_Y - 67);
+                        ImGui.image(winner == 'x'? CROSS_TEXTURE: NOUGHT_TEXTURE, 10, 10);
                     } else if (draw) {
-                        ImGui.setCursorPos((WIDTH - 25) / 2f, BOARD_Y - 50);
+                        ImGui.setCursorPos((WIDTH - 25) / 2f, BOARD_Y - 70);
                         ImGui.text("draw!");
                     }
                     ImGui.setCursorPos((WIDTH - 50) / 2f, BOARD_Y + BOARD_HEIGHT + 10);
@@ -226,6 +218,20 @@ public final class Main {
                         draw = false;
                         coords.forEach(p -> p.value = BLANK_TEXTURE);
                     }
+                } ImGui.end();
+                ImGui.begin("nought points", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
+                    ImGui.setWindowSize(80, 40);
+                    ImGui.setWindowPos(205, 51);
+                    ImGui.image(NOUGHT_TEXTURE, 40 - 16, 40 - 16);
+                    ImGui.setCursorPos(48 + 14, ((40 - 10) / 2f));
+                    ImGui.text(String.format("%d", noughtPoints));
+                } ImGui.end();
+                ImGui.begin("cross points", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
+                    ImGui.setWindowSize(80, 40);
+                    ImGui.setWindowPos(119, 51);
+                    ImGui.image(CROSS_TEXTURE, 40 - 16, 40 - 16);
+                    ImGui.setCursorPos(48 + 14, ((40 - 10) / 2f));
+                    ImGui.text(String.format("%d", crossPoints));
                 } ImGui.end();
                 ImGui.begin("board", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
                     ImGui.setWindowSize(BOARD_WIDTH, BOARD_HEIGHT);
@@ -248,10 +254,15 @@ public final class Main {
                             ImGui.image(HOVER_TEXTURE, BUTTON_SIZE + 7, BUTTON_SIZE + 5);
                         }
                         if (isButtonClicked && engine.place(8 - i) && !win && !draw) {
-                            co_ord.value = (player[0] == 'x'? CROSS_TEXTURE: NAUGHT_TEXTURE);
+                            co_ord.value = (player[0] == 'x'? CROSS_TEXTURE: NOUGHT_TEXTURE);
                             winner = player[0];
                             if (engine.isWin()) {
                                 win = true;
+                                if (winner == 'x') {
+                                    crossPoints++;
+                                } else {
+                                    noughtPoints++;
+                                }
                             } else if (engine.isDraw()) {
                                 draw = true;
                             }
