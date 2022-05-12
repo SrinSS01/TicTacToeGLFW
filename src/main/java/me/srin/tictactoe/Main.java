@@ -219,19 +219,21 @@ public final class Main {
                         coords.forEach(p -> p.value = BLANK_TEXTURE);
                     }
                 } ImGui.end();
+                int pointsWindowWidth = 80;
+                int pointsWindowHeight = 40;
                 ImGui.begin("nought points", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
-                    ImGui.setWindowSize(80, 40);
-                    ImGui.setWindowPos(205, 51);
+                    ImGui.setWindowSize(pointsWindowWidth, pointsWindowHeight);
+                    ImGui.setWindowPos((WIDTH - (pointsWindowWidth * 2 + 6)) * .5f, 51);
                     ImGui.image(NOUGHT_TEXTURE, 40 - 16, 40 - 16);
                     ImGui.setCursorPos(48 + 14, ((40 - 10) / 2f));
-                    ImGui.text(String.format("%d", noughtPoints));
+                    ImGui.text(String.valueOf(noughtPoints));
                 } ImGui.end();
                 ImGui.begin("cross points", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
                     ImGui.setWindowSize(80, 40);
-                    ImGui.setWindowPos(119, 51);
+                    ImGui.setWindowPos((WIDTH - (pointsWindowWidth * 2 + 6)) * .5f + 86, 51);
                     ImGui.image(CROSS_TEXTURE, 40 - 16, 40 - 16);
                     ImGui.setCursorPos(48 + 14, ((40 - 10) / 2f));
-                    ImGui.text(String.format("%d", crossPoints));
+                    ImGui.text(String.valueOf(crossPoints));
                 } ImGui.end();
                 ImGui.begin("board", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
                     ImGui.setWindowSize(BOARD_WIDTH, BOARD_HEIGHT);
