@@ -2,10 +2,7 @@ package me.srin.tictactoe;
 
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.ImVec2;
-import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiConfigFlags;
-import imgui.flag.ImGuiWindowFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import me.srin.tictactoe.engine.TicTacToeEngine;
@@ -18,7 +15,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 import static java.lang.System.err;
 import static org.lwjgl.glfw.GLFW.*;
@@ -30,25 +30,24 @@ import static org.lwjgl.stb.STBImage.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public final class Main {
-    private static final int WIDTH = 400;
-    public static final float BOARD_X = (WIDTH - 200f) / 2;
+    static final int WIDTH = 400;
     private static final int HEIGHT = 400;
-    public static final float BOARD_Y = (HEIGHT - 200f) / 2;
     private static final String TITLE = "TicTacToe";
     private static final long WINDOW;
     private static final ImGuiImplGlfw IM_GUI_GLFW = new ImGuiImplGlfw();
     private static final ImGuiImplGl3 IM_GUI_GL3 = new ImGuiImplGl3();
-    private static final int BOARD_TEXTURE;
-    private static final int CROSS_TEXTURE;
-    private static final int NOUGHT_TEXTURE;
-    private static final int BLANK_TEXTURE;
-    public static final int BOARD_WIDTH = 200;
-    public static final int BOARD_HEIGHT = 200;
+    static final int BOARD_TEXTURE;
+    static final int CROSS_TEXTURE;
+    static final int NOUGHT_TEXTURE;
+    static final int BLANK_TEXTURE;
+    static final int HOVER_TEXTURE;
     private static final int DEFAULT_BUFFER_SIZE = 8192;
     private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 8;
-
-    private static final int HOVER_TEXTURE;
-
+    static GameState gameState = null;
+    static Player.PlayerType winner = null;
+    static int noughtPoints = 0, crossPoints = 0;
+    static final Player PLAYER = new Player(Player.PlayerType.CROSS);
+    static TicTacToeEngine engine = new TicTacToeEngine(PLAYER);
     static {
         if (!glfwInit()) {
             throw new RuntimeException("Failed to initialize GLFW");
@@ -118,6 +117,10 @@ public final class Main {
             throw new RuntimeException(e);
         }
     }
+    private static final Board BOARD = new Board((WIDTH - 200f) / 2, (HEIGHT - 200f) / 2, 200, 200);
+    private static final HUD HUD = new HUD(0, 0, WIDTH, HEIGHT);
+    private static final NoughtPoints NOUGHT_POINTS = new NoughtPoints((WIDTH - (80 * 2 + 6)) * .5f, 51, 80, 40);
+    private static final CrossPoints CROSS_POINTS = new CrossPoints((WIDTH - (80 * 2 + 6)) * .5f + 80 + 6, 51, 80, 40);
     private static int loadTexture(String name) throws URISyntaxException, IOException {
         int texture = glGenTextures();
         glActiveTexture(GL_TEXTURE0);
@@ -174,113 +177,29 @@ public final class Main {
         IM_GUI_GL3.renderDrawData(ImGui.getDrawData());
     }
     public static void main(String[] args) {
+        start(args, () -> {
+            while (!glfwWindowShouldClose(WINDOW)) {
+                glClear(GL_COLOR_BUFFER_BIT);
+                imGuiStartFrame(); {
+                    HUD.render();
+                    NOUGHT_POINTS.render();
+                    CROSS_POINTS.render();
+                    BOARD.render();
+                } imGuiEndFrame();
+                glfwSwapBuffers(WINDOW);
+                glfwPollEvents();
+            }
+        });
+    }
+    private static void start(String[] args, Runnable game) {
+        // initialising ImGui stuff
         IM_GUI_GLFW.init(WINDOW, true);
         IM_GUI_GL3.init(args.length == 0? "#version 460": args[0]);
-        final float BUTTON_SIZE = 46.809f;
-        final char[] player = new char[1];
-        TicTacToeEngine engine = new TicTacToeEngine(player);
 
-        LinkedList<Pair<ImVec2, Integer>> coords = new LinkedList<>(
-                Arrays.asList(
-                        Pair.of(new ImVec2(10.606f, 12.121f)  , BLANK_TEXTURE),
-                        Pair.of(new ImVec2(72.727f, 12.121f)  , BLANK_TEXTURE),
-                        Pair.of(new ImVec2(134.848f, 12.121f) , BLANK_TEXTURE),
-                        Pair.of(new ImVec2(10.606f, 74.242f)  , BLANK_TEXTURE),
-                        Pair.of(new ImVec2(72.727f, 74.242f)  , BLANK_TEXTURE),
-                        Pair.of(new ImVec2(134.848f, 74.242f) , BLANK_TEXTURE),
-                        Pair.of(new ImVec2(10.606f,  134.848f), BLANK_TEXTURE),
-                        Pair.of(new ImVec2(72.727f,  134.848f), BLANK_TEXTURE),
-                        Pair.of(new ImVec2(134.848f, 134.848f), BLANK_TEXTURE)
-                )
-        );
-        boolean win = false, draw = false;
-        char winner = 0;
-        int noughtPoints = 0, crossPoints = 0;
-        while (!glfwWindowShouldClose(WINDOW)) {
-            glClear(GL_COLOR_BUFFER_BIT);
-            imGuiStartFrame(); {
-                ImGui.begin("background", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus); {
-                    ImGui.setWindowSize(WIDTH, HEIGHT);
-                    ImGui.setWindowPos(0, 0);
-                    if (win) {
-                        ImGui.setCursorPos(BOARD_X + 50, BOARD_Y - 70);
-                        ImGui.text("winner is   !!");
-                        ImGui.setCursorPos(BOARD_X + 120, BOARD_Y - 67);
-                        ImGui.image(winner == 'x'? CROSS_TEXTURE: NOUGHT_TEXTURE, 10, 10);
-                    } else if (draw) {
-                        ImGui.setCursorPos((WIDTH - 25) / 2f, BOARD_Y - 70);
-                        ImGui.text("draw!");
-                    }
-                    ImGui.setCursorPos((WIDTH - 50) / 2f, BOARD_Y + BOARD_HEIGHT + 10);
-                    if ((win || draw) && ImGui.button("reset", 50, 25)) {
-                        engine = new TicTacToeEngine(player);
-                        win = false;
-                        draw = false;
-                        coords.forEach(p -> p.value = BLANK_TEXTURE);
-                    }
-                } ImGui.end();
-                int pointsWindowWidth = 80;
-                int pointsWindowHeight = 40;
-                ImGui.begin("nought points", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
-                    ImGui.setWindowSize(pointsWindowWidth, pointsWindowHeight);
-                    ImGui.setWindowPos((WIDTH - (pointsWindowWidth * 2 + 6)) * .5f, 51);
-                    ImGui.image(NOUGHT_TEXTURE, 40 - 16, 40 - 16);
-                    ImGui.setCursorPos(48 + 14, ((40 - 10) / 2f));
-                    ImGui.text(String.valueOf(noughtPoints));
-                } ImGui.end();
-                ImGui.begin("cross points", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
-                    ImGui.setWindowSize(80, 40);
-                    ImGui.setWindowPos((WIDTH - (pointsWindowWidth * 2 + 6)) * .5f + 86, 51);
-                    ImGui.image(CROSS_TEXTURE, 40 - 16, 40 - 16);
-                    ImGui.setCursorPos(48 + 14, ((40 - 10) / 2f));
-                    ImGui.text(String.valueOf(crossPoints));
-                } ImGui.end();
-                ImGui.begin("board", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration); {
-                    ImGui.setWindowSize(BOARD_WIDTH, BOARD_HEIGHT);
-                    ImGui.setWindowPos(BOARD_X, BOARD_Y);
-                    ImGui.image(BOARD_TEXTURE, 200 - 16, 200 - 16);
-                    ImGui.pushStyleColor(ImGuiCol.Button, 0, 0, 0, 0);
-                    ImGui.pushStyleColor(ImGuiCol.ButtonActive, 0, 0, 0, 0);
-                    ImGui.pushStyleColor(ImGuiCol.ButtonHovered, 0, 0, 0, 0);
+        // running the game
+        game.run();
 
-                    int size = coords.size();
-                    for (int i = 0; i < size; i++) {
-                        ImGui.pushID(i);
-                        Pair<ImVec2, Integer> co_ord = coords.get(i);
-                        ImVec2 pos = co_ord.key;
-                        int texture = co_ord.value;
-                        ImGui.setCursorPos(pos.x, pos.y);
-                        boolean isButtonClicked = ImGui.imageButton(texture, BUTTON_SIZE, BUTTON_SIZE);
-                        if (ImGui.isItemHovered()) {
-                            ImGui.setCursorPos(pos.x, pos.y);
-                            ImGui.image(HOVER_TEXTURE, BUTTON_SIZE + 7, BUTTON_SIZE + 5);
-                        }
-                        if (isButtonClicked && engine.place(8 - i) && !win && !draw) {
-                            co_ord.value = (player[0] == 'x'? CROSS_TEXTURE: NOUGHT_TEXTURE);
-                            winner = player[0];
-                            if (engine.isWin()) {
-                                win = true;
-                                if (winner == 'x') {
-                                    crossPoints++;
-                                } else {
-                                    noughtPoints++;
-                                }
-                            } else if (engine.isDraw()) {
-                                draw = true;
-                            }
-                        }
-                        ImGui.popID();
-                    }
-                    ImGui.popStyleColor(3);
-                } ImGui.end();
-            } imGuiEndFrame();
-            glfwSwapBuffers(WINDOW);
-            glfwPollEvents();
-        }
-        dispose();
-    }
-
-    private static void dispose() {
+        // disposing of ImGui and opengl stuff
         IM_GUI_GL3.dispose();
         IM_GUI_GLFW.dispose();
         ImGui.destroyContext();
@@ -289,6 +208,34 @@ public final class Main {
         glfwTerminate();
         Objects.requireNonNull(glfwSetErrorCallback(null)).free();
     }
+    static Pair<Float, Float> getBoardXY() {
+        return Pair.of(BOARD.x, BOARD.y);
+    }
+    static void resetBoard() {
+        BOARD.resetButtonTextures();
+    }
+    static void resetTicTacToeEngine() {
+        PLAYER.setType(Player.PlayerType.CROSS);
+        engine = new TicTacToeEngine(PLAYER);
+    }
+    static void resetGameState() { gameState = null; }
+    static void reset() {
+        resetTicTacToeEngine();
+        resetGameState();
+        resetBoard();
+    }
+    public static Player.PlayerType getWinner() {
+        return winner;
+    }
+
+    public static int getNoughtPoints() {
+        return noughtPoints;
+    }
+
+    public static int getCrossPoints() {
+        return crossPoints;
+    }
+
     public static byte[] readNBytes(InputStream is, int len) throws IOException {
         if (len < 0) {
             throw new IllegalArgumentException("len < 0");
@@ -349,7 +296,7 @@ public final class Main {
 
         return result;
     }
-    private static class Pair<K, V> {
+    static class Pair<K, V> {
         private final K key;
         private V value;
 
@@ -360,5 +307,18 @@ public final class Main {
         public static <K, V> Pair<K, V> of(K key, V value) {
             return new Pair<>(key, value);
         }
+
+        public K getKey() {
+            return key;
+        }
+
+        public V getValue() {
+            return value;
+        }
+
+        public void setValue(V value) {
+            this.value = value;
+        }
     }
+    enum GameState { WIN, DRAW }
 }
