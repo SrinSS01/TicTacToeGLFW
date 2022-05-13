@@ -15,7 +15,7 @@ public class NoughtPoints extends Window {
     protected void renderUI() {
         ImGui.setWindowSize(width, height);
         ImGui.setWindowPos(x, y);
-        ImGui.image(NOUGHT_TEXTURE, 40 - 16, 40 - 16);
+        ImGui.image(NOUGHT_TEXTURE, height - 16, height - 16);
         ImGui.setCursorPos(48 + 14, ((40 - 10) / 2f));
         ImGui.text(String.valueOf(getNoughtPoints()));
     }

@@ -46,8 +46,8 @@ public final class Main {
     static GameState gameState = null;
     static Player.PlayerType winner = null;
     static int noughtPoints = 0, crossPoints = 0;
-    static final Player PLAYER = new Player(Player.PlayerType.CROSS);
-    static TicTacToeEngine engine = new TicTacToeEngine(PLAYER);
+    static Player PLAYER = null;// = new Player(Player.PlayerType.CROSS);
+    static TicTacToeEngine engine = null;// = new TicTacToeEngine(PLAYER);
     static {
         if (!glfwInit()) {
             throw new RuntimeException("Failed to initialize GLFW");
@@ -220,22 +220,21 @@ public final class Main {
     }
     static void resetGameState() { gameState = null; }
     static void reset() {
-        resetTicTacToeEngine();
+//        resetTicTacToeEngine();
+        PLAYER = null;
+        engine = null;
         resetGameState();
         resetBoard();
     }
     public static Player.PlayerType getWinner() {
         return winner;
     }
-
     public static int getNoughtPoints() {
         return noughtPoints;
     }
-
     public static int getCrossPoints() {
         return crossPoints;
     }
-
     public static byte[] readNBytes(InputStream is, int len) throws IOException {
         if (len < 0) {
             throw new IllegalArgumentException("len < 0");

@@ -1,11 +1,12 @@
 package me.srin.tictactoe;
 
 import imgui.ImGui;
+import imgui.flag.ImGuiWindowFlags;
 
 public abstract class Window {
     protected final float x, y, width, height;
     protected final String title;
-    protected final int hints;
+    protected int hints;
 
     public Window(float x, float y, float width, float height, String title, int hints) {
         this.x = x;
@@ -16,8 +17,10 @@ public abstract class Window {
         this.hints = hints;
     }
     protected abstract void renderUI();
+    protected int noMouse() { return Main.PLAYER == null? ImGuiWindowFlags.NoMouseInputs: 0; }
     public void render() {
-        ImGui.begin(title, hints); {
+        int noMouse = noMouse();
+        ImGui.begin(title, hints | noMouse); {
             ImGui.setWindowPos(x, y);
             ImGui.setWindowSize(width, height);
             renderUI();
