@@ -17,7 +17,7 @@ public abstract class Window {
         this.hints = hints;
     }
     protected abstract void renderUI();
-    protected int noMouse() { return Main.PLAYER == null? ImGuiWindowFlags.NoMouseInputs: 0; }
+    protected int noMouse() { return Main.player == null? ImGuiWindowFlags.NoMouseInputs: 0; }
     public void render() {
         int noMouse = noMouse();
         ImGui.begin(title, hints | noMouse); {

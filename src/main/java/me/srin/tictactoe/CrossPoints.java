@@ -12,8 +12,6 @@ public class CrossPoints extends Window {
     }
     @Override
     protected void renderUI() {
-        ImGui.setWindowSize(width, height);
-        ImGui.setWindowPos(x, y);
         ImGui.image(CROSS_TEXTURE, height - 16, height - 16);
         ImGui.setCursorPos(48 + 14, ((40 - 10) / 2f));
         ImGui.text(String.valueOf(getCrossPoints()));

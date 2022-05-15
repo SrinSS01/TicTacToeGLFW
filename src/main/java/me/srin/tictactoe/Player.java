@@ -16,7 +16,7 @@ public class Player {
     }
 
     public enum PlayerType {
-        NOUGHT('o'), CROSS('x');
+        NOUGHT('o'), CROSS('x'), NONE('\0');
         private final char type;
         PlayerType(char type) { this.type = type; }
 

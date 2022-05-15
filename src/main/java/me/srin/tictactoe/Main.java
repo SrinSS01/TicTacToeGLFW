@@ -41,13 +41,15 @@ public final class Main {
     static final int NOUGHT_TEXTURE;
     static final int BLANK_TEXTURE;
     static final int HOVER_TEXTURE;
+    static final int PC_TEXTURE;
+    static final int HUMAN_TEXTURE;
     private static final int DEFAULT_BUFFER_SIZE = 8192;
     private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 8;
-    static GameState gameState = null;
+    static GameState gameState = GameState.PLAYING;
     static Player.PlayerType winner = null;
     static int noughtPoints = 0, crossPoints = 0;
-    static Player PLAYER = null;// = new Player(Player.PlayerType.CROSS);
-    static TicTacToeEngine engine = null;// = new TicTacToeEngine(PLAYER);
+    static Player player = null;
+    static TicTacToeEngine engine = null;
     static {
         if (!glfwInit()) {
             throw new RuntimeException("Failed to initialize GLFW");
@@ -83,6 +85,8 @@ public final class Main {
             NOUGHT_TEXTURE = loadTexture("textures/circle.png");
             BLANK_TEXTURE = loadTexture("textures/blank.png");
             HOVER_TEXTURE = loadTexture("textures/hover.png");
+            PC_TEXTURE = loadTexture("textures/pc.png");
+            HUMAN_TEXTURE = loadTexture("textures/person.png");
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -211,20 +215,11 @@ public final class Main {
     static Pair<Float, Float> getBoardXY() {
         return Pair.of(BOARD.x, BOARD.y);
     }
-    static void resetBoard() {
-        BOARD.resetButtonTextures();
-    }
-    static void resetTicTacToeEngine() {
-        PLAYER.setType(Player.PlayerType.CROSS);
-        engine = new TicTacToeEngine(PLAYER);
-    }
-    static void resetGameState() { gameState = null; }
     static void reset() {
-//        resetTicTacToeEngine();
-        PLAYER = null;
+        player = null;
         engine = null;
-        resetGameState();
-        resetBoard();
+        gameState = GameState.PLAYING;
+        BOARD.reset();
     }
     public static Player.PlayerType getWinner() {
         return winner;
@@ -319,5 +314,5 @@ public final class Main {
             this.value = value;
         }
     }
-    enum GameState { WIN, DRAW }
+    enum GameState { WIN, DRAW, PLAYING }
 }
