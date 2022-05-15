@@ -60,8 +60,6 @@ public class Board extends Window {
                 checkWinORDraw(type);
             }
             if (me.srin.tictactoe.HUD.mode == Mode.COMPUTER && gameState == GameState.PLAYING && type == Computer.playerType && computerPlayer.play()) {
-//                co_ord.setValue(Computer.playerType == CROSS ? CROSS_TEXTURE : NOUGHT_TEXTURE);
-//                computerPlayer.removeIndex(i);
                 checkWinORDraw(type);
             }
             ImGui.popID();
